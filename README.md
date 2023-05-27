@@ -1,30 +1,28 @@
 # MAUI Android Background Services
 
-The goal of this module is to create an MAUI Android app that installs a service which runs in the background when the phone boots up. There is no limit to how long the service can run, but we will be judicious about CPU and memory usage.
+The goal of this module is to create a MAUI Android app that installs a service which runs in the background when the phone boots up. There is no limit to how long the service can run, but we will be judicious about CPU and memory usage.
 
-For this demo you can use either **MAUI XAML** or **MAUI Blazor**. Most of the code is Android-specific, and there's very little UI. Therefore, I'm offering the choice up to you. UI for both are provided here.
+For these demos you can use either **MAUI XAML** or **MAUI Blazor**. Most of the code is Android-specific with very little UI. 
 
-In the first part of the demo we'll spin up a timer that shows a notification every 10 seconds. This is just a demo to show us that our code is running in the background, and that we can show notifications.
+This module consists of two demos. In the first demo we'll spin up a timer that shows a notification every 10 seconds. This is just to show us that our code is running in the background, and that we can show notifications.
 
-In the second part of the demo we will implement a SignalR system by which the service can receive push messages and display them. This is also just a demo, and should not be used in production due to the fact that there's zero security around the messaging. Also, SignalR does not queue messages. If your Android app misses them, they are gone forever. 
+In the second demo we will implement a SignalR system by which the service can receive push messages and display them. 
 
-So, to reiterate, the point is to learn how to write a background service for your Android apps, from which you can show notifications. How you get those messages in production is beyond the scope of the demo.
+> :warning: This code should ***not*** be used as-is in production due to the fact that there's zero security around the messaging. Also, SignalR does not queue messages. If your Android app misses them, they are gone forever. 
+
+So, to reiterate, the point is to learn how to write a background service for your Android apps, from which you can show notifications. How you get data in production is beyond the scope of the demo.
 
 ## Prerequisites
 
 The following prerequisites are needed for this demo.
 
-### .NET 7
-
-Download the latest version of the .NET 7 SDK [here](https://dotnet.microsoft.com/en-us/download), or just install Visual Studio 2022.
-
 ### Visual Studio 2022
 
-For this demo, we are going to use the latest version of [Visual Studio 2022](https://visualstudio.microsoft.com/vs/community/).
+For this module, we are going to use [Visual Studio 2022](https://visualstudio.microsoft.com/vs/community/) with .NET 7
 
 ### Required Workloads
 
-In order to build ASP.NET Core Web API applications, the `ASP.NET and web development` workload needs to be installed. In order to build `.NET MAUI` applications, you also need the `.NET Multi-platform App UI development` workload, so if you do not have them installed let's do that now.
+In order to build ASP.NET Core Web applications, the `ASP.NET and web development` workload needs to be installed. In order to build `.NET MAUI` applications, you also need the `.NET Multi-platform App UI development` workload.
 
 Here's a screen shot of the Visual Studio Installer.
 
@@ -32,11 +30,13 @@ Here's a screen shot of the Visual Studio Installer.
 
 ## Overview
 
-I have a confession to make. We're actually going to create a **Foreground Service** as opposed to a **Background Service**. 
+I have a confession to make. We're actually going to create a **Foreground Service** as opposed to a **Background Service**. In Android, there is a distinction.
 
-Background services do not need to display a notification to the user while it is running. However, since Android 8.0 (API level 26), the system places restrictions on what such services can do while they are running in the background, in order to conserve system resources. This means that you can't ensure that your service will always be running.
+> Background services can not display a notification to the user while it is running. However, since Android 8.0 (API level 26), the system places restrictions on what such services can do while they are running in the background, in order to conserve system resources. This means that you can't ensure that your service will always be running.
+>
 
-Foreground services are one of the most reliable ways to ensure that your service is not stopped by the Android system to reclaim resources. Foreground services can display notifications while they are running. 
+> Foreground services are one of the most reliable ways to ensure that your service is not stopped by the Android system to reclaim resources. Foreground services can display notifications while they are running. 
+>
 
 I want a service that 
 
@@ -48,19 +48,23 @@ I want a service that
 - can show notifications
 - can set the number in the little red circle on the app icon
 
-The Foreground service is the one I will use.
+By "little red circle", I mean this:
 
-I started with the code [in this blog post](https://putridparrot.com/blog/android-foreground-service-using-maui/) by Mark Timmings. It was a good start, but I ended up with something more suited to my needs. Mark's post doesn't cover automatically starting the service when the phone boots up, for example. Still, it was a great start.
+<img src="images/Screenshot_20230527-083431_One UI Home.jpg" alt="Screenshot_20230527-083431_One UI Home" style="zoom:25%;" />
+
+I started with the code [in this blog post](https://putridparrot.com/blog/android-foreground-service-using-maui/) by Mark Timmings. It was a good start, but I ended up with something more suited to my needs. Mark's post doesn't cover automatically starting the service when the phone boots up, for example. Still, it was a great start, and I quote him at times in this documentation.
 
 ### Let's Go!
 
-Create either a new **.NET MAUI App** or a **.NET MAUI Blazor App** called **MAUIAndroidFS**
+Create either a **.NET MAUI App** or a **.NET MAUI Blazor App** called **MAUIAndroidFS**
 
 ![image-20230526185550578](images/image-20230526185550578.png)
 
 ![image-20230526185607142](images/image-20230526185607142.png)
 
 ![image-20230526185617302](images/image-20230526185617302.png)
+
+**Create the service itself**
 
 Add *Platforms/Android/MyBackgroundService.cs*:
 
@@ -146,11 +150,11 @@ public override IBinder OnBind(Intent intent)
 }
 ```
 
-We’re not using the OnBind method which is used for “Bound Services” so simply return null here. 
+We’re not using the OnBind method, which is used for "Bound Services", so simply return null here. 
 
-Let's dive into the `OnStartCommand` method.
+Let's dive into the `OnStartCommand` method, which we are overriding.
 
-First thing we do is retrieve a string, which we set in `MainActivity`.  This value should be "Background Service".
+The first thing we do is retrieve a string, which we set in `MainActivity`.  This value should be "Background Service".
 
 ```c#
 var input = intent.GetStringExtra("inputExtra");
@@ -162,7 +166,9 @@ Line 25 creates an intent linked to the app itself via `MainActivity`:
 var notificationIntent = new Intent(this, typeof(MainActivity));
 ```
 
-This ensures that when the user taps on a notification, it will bring up the App.
+An `Intent` is a software mechanism for describing an operation to be performed. It's a way to pass data between components of an Android application, but it also allows communication between different applications.
+
+The Intent we want will ensure that when the user taps on a notification, it will bring up the App.
 
 However, we can't use the `notificationIntent` directly. We have to create a `PendingIntent` from it with the code in lines 26 and 27:
 
@@ -171,7 +177,7 @@ var pendingIntent = PendingIntent.GetActivity(this, 0, notificationIntent,
     PendingIntentFlags.Immutable);
 ```
 
-Lines 29-33 create a `NotificationCompat.Builder`, which is used to start the foreground service.
+Lines 29-33 create a `NotificationCompat.Builder`, which is used to trigger a notification.
 
 ```c#
 var notification = new NotificationCompat.Builder(this,
@@ -189,7 +195,7 @@ Notice the methods we are calling:
 - `SetSmallIcon` defines the icon that will display at the very top left of the phone screen when the service is running.
 - `SetContentIntent` sets the intent, which links the notification back to our app.
 
-At this point you can kick off a worker thread, initialize a timer, set up a pub/sub event handler, or do whatever you need to do in the background. Just be careful you don't take up too much CPU and/or memory, or the phone's battery will run down faster. 
+At this point you can kick off a worker thread, initialize a timer, set up a pub/sub event handler, or do whatever you need to do in the background. Just be careful you don't take up too much CPU and/or memory as the phone's battery will run down faster. 
 
 For the first part of the demo, we'll instantiate the timer on line 35:
 
@@ -197,9 +203,9 @@ For the first part of the demo, we'll instantiate the timer on line 35:
 timer = new Timer(Timer_Elapsed, notification, 0, 10000);
 ```
 
-This code basically says "call the Timer_Elapsed method passing notification starting in 0 milliseconds and repeating every 10 seconds."
+This code basically says "call the Timer_Elapsed method passing the notification, starting in 0 milliseconds, and repeating every 10 seconds."
 
-This isn't a good idea for production, but it proves our code is running in the background.
+This isn't good production code, but it proves that the service is running in the background.
 
 Finally, line 39 returns this:
 
@@ -254,7 +260,15 @@ public class MainApplication : MauiApplication
 }
 ```
 
-We are creating a `NotificationChannel` with the `ChannelId` we declare earlier. The notification has a name “Background Service Channel” and an importance level. This needs to be set to **Low** or higher. If we set it anything above **Low** we’ll hear a sound when the notification is sent/updated. The user can disable this, but you may or may not prefer a low importance so your service is less intrusive. 
+Look at `OnCreate()`, which we are overriding.
+
+> The `CA1416` warning is related to platform compatibility checks in .NET. It's part of a set of warnings and errors that help developers avoid inadvertently using APIs that are not available on the platforms they intend to run their code on. CA1416 specifically warns when code uses an API that doesn't exist on the platforms specified in the `[SupportedOSPlatform]` and `[UnsupportedOSPlatform]` attributes. By writing `#pragma warning disable CA1416`, the developer is saying "I know this code might be using APIs that aren't available on all platforms, but I want to suppress the warnings about it."
+
+We are creating a `NotificationChannel` with the `ChannelId` we defined on line 10. 
+
+The notification has a name “Background Service Channel” and an importance level of **High**. 
+
+Finally, we are creating the notification channel, which can be accessed by the `ChannelId`.
 
 Replace */Platforms/Android/MainActivity.cs* with the following:
 
@@ -311,7 +325,7 @@ public void StartService()
 }
 ```
 
-Line 21 creates an intent associated with our service code (`MyBackgroundService`). We add a key/value in the *PutExtra* method. The key is whatever we want and obviously the value is whatever we want to associated with the key. This will be handled via our service, so the key would best be a const in a real world application. 
+Line 21 creates an intent associated with our service code (`MyBackgroundService`). We add a key/value in the *PutExtra* method. The key is whatever we want and obviously the value is whatever we want to associated with the key. This will be handled via our service, so the key would best be a `const` in a production application, or simply make it a public static string field in the `AndroidServiceManager`. 
 
 Finally we call the base `StartService` passing the Intent.
 
@@ -384,6 +398,8 @@ public class BootReceiver : BroadcastReceiver
 
 This is the class we can use to start the service when the phone boots up.
 
+It inherits `BroadcastReceiver`, which does the real work.
+
 Lines 16 and 17 show a toast popup so we will know that the service is about to start on boot up.
 
 ```c#
@@ -451,13 +467,13 @@ depending on the name of your application. And:
 
 depending on the name of your BroadcastReceiver.
 
-> :point_up: At some point you may need the name of the `BootReceiver` class in *BootReceiver.cs* and also the reference to it in */Platforms/Android/AndroidManifest.xml* if, for example, the service doesn't automatically start on reboot. Just add a number to the end of the name. Ex: `class BootReceiver1`
+> :point_up: At some point you may need the name of the `BootReceiver` class in *BootReceiver.cs* and also the reference to it in */Platforms/Android/AndroidManifest.xml* if, for example, the service doesn't automatically start on reboot. Just add a number to the end of the name. Ex: `class BootReceiver1`. I found that after deploying the app multiple times, this is necessary.
 
 ## User Interface
 
 The purpose of the user interface is to
 
-- start the service if it's not already running
+- start the service (on load) if it's not already running
 - allow the user to stop the service
 
 ### For MAUI XAML:
@@ -624,7 +640,7 @@ public class BroadcastHub : Hub
 
 If you need help, the [documentation](https://learn.microsoft.com/en-us/azure/app-service/quickstart-dotnetcore?tabs=net70&pivots=development-environment-vs) is excellent.
 
-Make a note of the name of your web app. You'll need it for the next step.
+Make a note of the name of your web app. You'll need it for the next step. Mine is (or was) **mauibroadcastserver**. You will have to choose a unique name.
 
 ### Add a Console App
 
@@ -809,4 +825,12 @@ Restart the phone and wait until you get the "Service Running" notification.
 Set the **SendMessageToPhone** project as the startup project and run it.
 
 Enter a message and see if you don't receive it on your phone.
+
+## Battery Life
+
+`MyBackgroundService` currently uses a timer to check the state of the `HubConnection` once every 10 seconds. I let it run overnight, and in 10 hours the battery went down 6%. 
+
+The next day I changed the interval to 60 seconds, and over 10 hours the battery went down only 2%.
+
+If you're going to use this approach to either poll for new data on a timer or check the status of your connection, you'll probably want to do a similar test.
 

@@ -1,0 +1,39 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31611.283
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MAUIAndroidFS", "MAUIAndroidFS\MAUIAndroidFS.csproj", "{861BD5FB-DB6C-44C8-B4F2-1FCA6A2F3F5E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MAUIBroadcastServer", "MAUIBroadcastServer\MAUIBroadcastServer.csproj", "{ED294DE9-9E45-4C74-A171-5A24030D410A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SendMessageToPhone", "SendMessageToPhone\SendMessageToPhone.csproj", "{2E503D0B-00AC-434F-BFA7-190375048022}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{861BD5FB-DB6C-44C8-B4F2-1FCA6A2F3F5E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{861BD5FB-DB6C-44C8-B4F2-1FCA6A2F3F5E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{861BD5FB-DB6C-44C8-B4F2-1FCA6A2F3F5E}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{861BD5FB-DB6C-44C8-B4F2-1FCA6A2F3F5E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{861BD5FB-DB6C-44C8-B4F2-1FCA6A2F3F5E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{861BD5FB-DB6C-44C8-B4F2-1FCA6A2F3F5E}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{ED294DE9-9E45-4C74-A171-5A24030D410A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED294DE9-9E45-4C74-A171-5A24030D410A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED294DE9-9E45-4C74-A171-5A24030D410A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED294DE9-9E45-4C74-A171-5A24030D410A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2E503D0B-00AC-434F-BFA7-190375048022}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E503D0B-00AC-434F-BFA7-190375048022}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E503D0B-00AC-434F-BFA7-190375048022}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E503D0B-00AC-434F-BFA7-190375048022}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {61F7FB11-1E47-470C-91E2-47F8143E1572}
+	EndGlobalSection
+EndGlobal
