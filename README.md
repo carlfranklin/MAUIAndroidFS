@@ -727,9 +727,13 @@ internal class MyBackgroundService : Service
             .SetSmallIcon(Resource.Drawable.AppIcon)
             .SetContentIntent(pendingIntent);
 
+        // Increment the BadgeNumber
         BadgeNumber++;
-        notification.SetNumber(1);
+        // set the number
+        notification.SetNumber(BadgeNumber);
+        // set the title (text) to Service Running
         notification.SetContentTitle("Service Running");
+        // build and notify
         StartForeground(myId, notification.Build());
 
         // timer to ensure hub connection
@@ -750,6 +754,7 @@ internal class MyBackgroundService : Service
 
             hubConnection.On<string>("ReceiveMessage", (message) =>
             {
+                // Display the message in a notification
                 BadgeNumber++;
                 notification.SetNumber(BadgeNumber);
                 notification.SetContentTitle(message);
