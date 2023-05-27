@@ -4,6 +4,10 @@ VisualStudioVersion = 17.0.31611.283
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MAUIAndroidFS", "MAUIAndroidFS\MAUIAndroidFS.csproj", "{D0EA6BCA-32B7-44DC-97B7-CC346F168B14}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MAUIBroadcastServer", "MAUIBroadcastServer\MAUIBroadcastServer.csproj", "{2E17F6D6-D9A2-4B94-A0F1-082F8AC31CEB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SendMessageToPhone", "SendMessageToPhone\SendMessageToPhone.csproj", "{FF08D042-424F-49EC-B9E8-4B86E2224C3F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -16,11 +20,20 @@ Global
 		{D0EA6BCA-32B7-44DC-97B7-CC346F168B14}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D0EA6BCA-32B7-44DC-97B7-CC346F168B14}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D0EA6BCA-32B7-44DC-97B7-CC346F168B14}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{2E17F6D6-D9A2-4B94-A0F1-082F8AC31CEB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E17F6D6-D9A2-4B94-A0F1-082F8AC31CEB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E17F6D6-D9A2-4B94-A0F1-082F8AC31CEB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E17F6D6-D9A2-4B94-A0F1-082F8AC31CEB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FF08D042-424F-49EC-B9E8-4B86E2224C3F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FF08D042-424F-49EC-B9E8-4B86E2224C3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FF08D042-424F-49EC-B9E8-4B86E2224C3F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FF08D042-424F-49EC-B9E8-4B86E2224C3F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		        SolutionGuid = {61F7FB11-1E47-470C-91E2-47F8143E1572}
+		SolutionGuid = {99500144-EC9F-4451-8248-B85FEB06E3B8}
 	EndGlobalSection
 EndGlobal

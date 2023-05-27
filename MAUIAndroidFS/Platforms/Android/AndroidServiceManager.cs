@@ -1,6 +1,4 @@
-﻿using Android.Content;
-
-namespace MAUIAndroidFS.Platforms.Android;
+﻿namespace MAUIAndroidFS.Platforms.Android;
 
 public static class AndroidServiceManager
 {

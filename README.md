@@ -1,3 +1,59 @@
+# MAUI Android Background Services
+
+The goal of this module is to create an MAUI Android app that installs a service which runs in the background when the phone boots up. There is no limit to how long the service can run, but we will be judicious about CPU and memory usage.
+
+For this demo you can use either **MAUI XAML** or **MAUI Blazor**. Most of the code is Android-specific, and there's very little UI. Therefore, I'm offering the choice up to you. UI for both are provided here.
+
+In the first part of the demo we'll spin up a timer that shows a notification every 10 seconds. This is just a demo to show us that our code is running in the background, and that we can show notifications.
+
+In the second part of the demo we will implement a SignalR system by which the service can receive push messages and display them. This is also just a demo, and should not be used in production due to the fact that there's zero security around the messaging. Also, SignalR does not queue messages. If your Android app misses them, they are gone forever. 
+
+So, to reiterate, the point is to learn how to write a background service for your Android apps, from which you can show notifications. How you get those messages in production is beyond the scope of the demo.
+
+## Prerequisites
+
+The following prerequisites are needed for this demo.
+
+### .NET 7
+
+Download the latest version of the .NET 7 SDK [here](https://dotnet.microsoft.com/en-us/download), or just install Visual Studio 2022.
+
+### Visual Studio 2022
+
+For this demo, we are going to use the latest version of [Visual Studio 2022](https://visualstudio.microsoft.com/vs/community/).
+
+### Required Workloads
+
+In order to build ASP.NET Core Web API applications, the `ASP.NET and web development` workload needs to be installed. In order to build `.NET MAUI` applications, you also need the `.NET Multi-platform App UI development` workload, so if you do not have them installed let's do that now.
+
+Here's a screen shot of the Visual Studio Installer.
+
+![image-20230526205444225](images/image-20230526205444225.png)
+
+## Overview
+
+I have a confession to make. We're actually going to create a **Foreground Service** as opposed to a **Background Service**. 
+
+Background services do not need to display a notification to the user while it is running. However, since Android 8.0 (API level 26), the system places restrictions on what such services can do while they are running in the background, in order to conserve system resources. This means that you can't ensure that your service will always be running.
+
+Foreground services are one of the most reliable ways to ensure that your service is not stopped by the Android system to reclaim resources. Foreground services can display notifications while they are running. 
+
+I want a service that 
+
+- runs in the background 
+- can be registered (and run) by a MAUI Android app
+- doesn't require the UI (MAUI App) to be running
+- can be stopped by the MAUI App
+- can be uninstalled when the MAUI App is uninstalled
+- can show notifications
+- can set the number in the little red circle on the app icon
+
+The Foreground service is the one I will use.
+
+I started with the code [in this blog post](https://putridparrot.com/blog/android-foreground-service-using-maui/) by Mark Timmings. It was a good start, but I ended up with something more suited to my needs. Mark's post doesn't cover automatically starting the service when the phone boots up, for example. Still, it was a great start.
+
+### Let's Go!
+
 Create either a new **.NET MAUI App** or a **.NET MAUI Blazor App** called **MAUIAndroidFS**
 
 ![image-20230526185550578](images/image-20230526185550578.png)
@@ -69,7 +125,91 @@ internal class MyBackgroundService : Service
 }
 ```
 
-*/Platforms/Android/MainApplication.cs*:
+This class inherits *Android.App.Service*, which allows you to override the base class `OnStartCommand` virtual method. We are also using the `[Service]` attribute.
+
+> :point_up: Even though I called it `MyBackgroundService`, it is technically a foreground service, but still runs in the background.
+
+Check out line 12:
+
+```c#
+int myId = (new object()).GetHashCode();
+```
+
+This is basically a random integer that I can use as an ID. It's not really necessary, but I'm not a fan of using magic numbers.
+
+Look at lines 15-18:
+
+```c#
+public override IBinder OnBind(Intent intent)
+{
+    return null;
+}
+```
+
+We’re not using the OnBind method which is used for “Bound Services” so simply return null here. 
+
+Let's dive into the `OnStartCommand` method.
+
+First thing we do is retrieve a string, which we set in `MainActivity`.  This value should be "Background Service".
+
+```c#
+var input = intent.GetStringExtra("inputExtra");
+```
+
+Line 25 creates an intent linked to the app itself via `MainActivity`:
+
+```c#
+var notificationIntent = new Intent(this, typeof(MainActivity));
+```
+
+This ensures that when the user taps on a notification, it will bring up the App.
+
+However, we can't use the `notificationIntent` directly. We have to create a `PendingIntent` from it with the code in lines 26 and 27:
+
+```c#
+var pendingIntent = PendingIntent.GetActivity(this, 0, notificationIntent,
+    PendingIntentFlags.Immutable);
+```
+
+Lines 29-33 create a `NotificationCompat.Builder`, which is used to start the foreground service.
+
+```c#
+var notification = new NotificationCompat.Builder(this,
+        MainApplication.ChannelId)
+    .SetContentText(input)
+    .SetSmallIcon(Resource.Drawable.AppIcon)
+    .SetContentIntent(pendingIntent);
+```
+
+This requires the service reference (`this`), and the `MainApplication.ChannelId`, which we will set in *MainApplication.cs*.
+
+Notice the methods we are calling:
+
+- `SetContentText` sets the text of the notification. There are two text fields: Text and Title. 
+- `SetSmallIcon` defines the icon that will display at the very top left of the phone screen when the service is running.
+- `SetContentIntent` sets the intent, which links the notification back to our app.
+
+At this point you can kick off a worker thread, initialize a timer, set up a pub/sub event handler, or do whatever you need to do in the background. Just be careful you don't take up too much CPU and/or memory, or the phone's battery will run down faster. 
+
+For the first part of the demo, we'll instantiate the timer on line 35:
+
+```c#
+timer = new Timer(Timer_Elapsed, notification, 0, 10000);
+```
+
+This code basically says "call the Timer_Elapsed method passing notification starting in 0 milliseconds and repeating every 10 seconds."
+
+This isn't a good idea for production, but it proves our code is running in the background.
+
+Finally, line 39 returns this:
+
+```c#
+return StartCommandResult.Sticky;
+```
+
+*StartCommandResult.Sticky* is used to tell the OS to recreate the service when it has enough memory after running out of memory. You can also specify *StartCommandResult.NotSticky*. This tells the OS to not bother recreating the application if (for example) the device runs out of memory. 
+
+Replace */Platforms/Android/MainApplication.cs* with the following:
 
 ```c#
 using Android.App;
@@ -81,8 +221,7 @@ namespace MAUIAndroidFS;
 [Application]
 public class MainApplication : MauiApplication
 {
-    public static readonly string ChannelId 
-        = "backgroundServiceChannel";
+    public static readonly string ChannelId = "backgroundServiceChannel";
 
     public MainApplication(IntPtr handle, 
         JniHandleOwnership ownership) : base(handle, ownership)
@@ -115,9 +254,9 @@ public class MainApplication : MauiApplication
 }
 ```
 
+We are creating a `NotificationChannel` with the `ChannelId` we declare earlier. The notification has a name “Background Service Channel” and an importance level. This needs to be set to **Low** or higher. If we set it anything above **Low** we’ll hear a sound when the notification is sent/updated. The user can disable this, but you may or may not prefer a low importance so your service is less intrusive. 
 
-
-*/Platforms/Android/MainActivity.cs*:
+Replace */Platforms/Android/MainActivity.cs* with the following:
 
 ```c#
 using Android.App;
@@ -153,13 +292,36 @@ public class MainActivity : MauiAppCompatActivity
 }
 ```
 
+Line 16 deserves an explanation:
 
+```c#
+AndroidServiceManager.MainActivity = this;
+```
+
+Scroll down to see the `AndroidServiceManager` class, which I've introduced as a way to provide a little state between the Android code, the service, and the UI. `MainActivity` is a static property that lets us share the reference. We'll get back to that.
+
+Check out `StartService()`:
+
+```c#
+public void StartService()
+{
+    var serviceIntent = new Intent(this, typeof(MyBackgroundService));
+    serviceIntent.PutExtra("inputExtra", "Background Service");
+    StartService(serviceIntent);
+}
+```
+
+Line 21 creates an intent associated with our service code (`MyBackgroundService`). We add a key/value in the *PutExtra* method. The key is whatever we want and obviously the value is whatever we want to associated with the key. This will be handled via our service, so the key would best be a const in a real world application. 
+
+Finally we call the base `StartService` passing the Intent.
+
+`StopService()` creates the intent just as above, but then passes it to the base `StopService()` method.
+
+Add the following class to the project
 
 */Platforms/Android/AndroidServiceManager.cs*:
 
 ```c#
-using Android.Content;
-
 namespace MAUIAndroidFS.Platforms.Android;
 
 public static class AndroidServiceManager
@@ -183,7 +345,11 @@ public static class AndroidServiceManager
 }
 ```
 
+We need access to the `MainActivity` in order to start and stop the service, which we want to do from the UI layer.
 
+Notice that `IsRunning` is not set in `StartMyService()`. We will set that in the service itself once the code is running.
+
+Add the following class to the project:
 
 */Platforms/Android/BootReceiver.cs*:
 
@@ -216,15 +382,29 @@ public class BootReceiver : BroadcastReceiver
 }
 ```
 
+This is the class we can use to start the service when the phone boots up.
 
+Lines 16 and 17 show a toast popup so we will know that the service is about to start on boot up.
 
-*/Platforms/Android/AndroidManifext.xml*:
+```c#
+Toast.MakeText(context, "Boot completed event received", 
+    ToastLength.Short).Show();
+```
+
+Be on the lookout for that.  The phone has to be on in order for you to see it.
+
+Now, perhaps the most important piece: configuration.
+
+Replace */Platforms/Android/AndroidManifext.xml* with the following:
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 	<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-	<application android:name="MauiAndroidFS.MainApplication"
+	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+	<uses-permission android:name="android.permission.INTERNET" />
+	<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <application android:name="MauiAndroidFS.MainApplication"
                  android:debuggable="true"
                  android:enabled="true"
                  android:allowBackup="true"
@@ -243,15 +423,46 @@ public class BootReceiver : BroadcastReceiver
 			</intent-filter>
 		</receiver>
 	</application>
-	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-	<uses-permission android:name="android.permission.INTERNET" />
-	<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 </manifest>
 ```
 
+The four permissions expressed at the top are all necessary:
+
+```xml
+<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+```
+
+Notice that permissions are repeated in the `<application>` and `<receiver>` elements.
+
+Some values you might need to change are:
+
+```xml
+<application android:name="MauiAndroidFS.MainApplication"
+```
+
+depending on the name of your application. And:
+
+```c#
+<receiver android:name=".BootReceiver"
+```
+
+depending on the name of your BroadcastReceiver.
+
+> :point_up: At some point you may need the name of the `BootReceiver` class in *BootReceiver.cs* and also the reference to it in */Platforms/Android/AndroidManifest.xml* if, for example, the service doesn't automatically start on reboot. Just add a number to the end of the name. Ex: `class BootReceiver1`
+
+## User Interface
+
+The purpose of the user interface is to
+
+- start the service if it's not already running
+- allow the user to stop the service
+
 ### For MAUI XAML:
 
-Replace *MainPage.xaml* with the following:
+If you chose the **.NET MAUI App** template (as opposed to Blazor), replace *MainPage.xaml* with the following:
 
 ```xaml
 <?xml version="1.0" encoding="utf-8" ?>
@@ -260,7 +471,7 @@ Replace *MainPage.xaml* with the following:
              x:Class="MAUIAndroidFS.MainPage">
 
     <VerticalStackLayout Margin="20">
-        <Button x:Name="StopButton" Clicked="StopButton_Clicked" Text="Stop Service"></Button>
+        <Button Clicked="StopButton_Clicked" Text="Stop Service"></Button>
         <Label x:Name="MessageLabel" FontSize="20" />
     </VerticalStackLayout>
 
@@ -304,54 +515,68 @@ public partial class MainPage : ContentPage
 }
 ```
 
+It should be easy to understand. 
+
+We are using `AndroidServiceManager`:
+
+- to determine if the service is already running
+- to start the service
+- to stop the service
+
 ### For MAUI  Blazor:
 
-*/Pages/Index.razor*:
+Replace */Pages/Index.razor* with the following:
 
 ```c#
-namespace MAUIAndroidFS;
+@page "/"
 
-public partial class MainPage : ContentPage
+<button class="btn btn-primary" @onclick="StopService">Stop Service</button>
+<br/>
+<h3>@Message</h3>
+
+@code
 {
-	public MainPage()
-	{
-		InitializeComponent();
-        this.Loaded += MainPage_Loaded;
-	}
+    string Message = string.Empty;
 
-    private void MainPage_Loaded(object sender, EventArgs e)
+    void StopService()
+    {
+#if ANDROID
+        MAUIAndroidFS.Platforms.Android.AndroidServiceManager.StopMyService();
+        Message = "Service is stopped";
+#endif
+    }
+
+    protected override void OnInitialized()
     {
 #if ANDROID
         if (!MAUIAndroidFS.Platforms.Android.AndroidServiceManager.IsRunning)
         {
             MAUIAndroidFS.Platforms.Android.AndroidServiceManager.StartMyService();
-            MessageLabel.Text = "Service has started";
+            Message = "Service has started";
         }
         else{
-            MessageLabel.Text = "Service is running";
+            Message = "Service is running";
         }
-#endif
-    }
-
-    private void StopButton_Clicked(object sender, EventArgs e)
-    {
-#if ANDROID
-        MAUIAndroidFS.Platforms.Android.AndroidServiceManager.StopMyService();
-        MessageLabel.Text = "Service is stopped";
 #endif
     }
 }
 ```
 
+It's pretty-much the same as the XAML version. We are using the `OnInitialized()` virtual method as the place where we start the service if it is not already running.
+
 **Add */Platforms/Android/Resources/Drawable/AppIcon.png***
 
-Run it on your local android device.
+Grab this icon from the repo, or use any 32x32 png file.
+
+Run the app on your local android device.
 
 Let it run until you get at least one message, then restart the phone. The messages should start shortly after booting up. 
 
 > :point_up: If after several minutes you do not start seeing notifications, you may be hitting a snag that I hit. Change the name of the `BootReceiver` class in *BootReceiver.cs* and also the reference to it in */Platforms/Android/AndroidManifest.xml*
 
 ## Using SignalR to Push Notifications
+
+In the second demo, we'll use SignalR. We'll create a SignalR Hub for broadcasting messages. We'll subscribe to those messages in the Android service, and we'll create a console app for sending messages to  the service on the phone via SignalR. The service will then display the message as a notification and increment the number in the little red circle on the app icon.
 
 To the solution add a new **ASP.NET Core Empty** project named **MAUIBroadcastServer**
 
@@ -396,6 +621,8 @@ public class BroadcastHub : Hub
 ```
 
 #### Publish MAUIBroadcastServer to Azure
+
+If you need help, the [documentation](https://learn.microsoft.com/en-us/azure/app-service/quickstart-dotnetcore?tabs=net70&pivots=development-environment-vs) is excellent.
 
 Make a note of the name of your web app. You'll need it for the next step.
 
