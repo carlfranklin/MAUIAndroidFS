@@ -1,0 +1,31 @@
+﻿@page "/"
+
+<button class="btn btn-primary" @onclick="StopService">Stop Service</button>
+<h3>@Message</h3>
+
+@code
+{
+    string Message = string.Empty;
+
+    void StopService()
+    {
+#if ANDROID
+        MAUIAndroidFS.Platforms.Android.AndroidServiceManager.StopMyService();
+        Message = "Service is stopped";
+#endif
+    }
+
+    protected override void OnInitialized()
+    {
+#if ANDROID
+        if (!MAUIAndroidFS.Platforms.Android.AndroidServiceManager.IsRunning)
+        {
+            MAUIAndroidFS.Platforms.Android.AndroidServiceManager.StartMyService();
+            Message = "Service has started";
+        }
+        else{
+            Message = "Service is running";
+        }
+#endif
+    }
+}
