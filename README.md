@@ -1,6 +1,6 @@
 # MAUI Android Background Services
 
-The goal of this module is to create a MAUI Android app that installs a service which runs in the background when the phone boots up. There is no limit to how long the service can run, but we will be judicious about CPU and memory usage.
+The goal of this module is to create a MAUI Android app that installs a service which runs in the background and starts automatically when the phone boots up. There is no limit to how long the service can run, but we will be judicious about CPU and memory usage.
 
 For these demos you can use either **MAUI XAML** or **MAUI Blazor**. Most of the code is Android-specific with very little UI. 
 
