@@ -82,26 +82,39 @@ internal class MyBackgroundService : Service
     Timer timer = null;
     int myId = (new object()).GetHashCode();
     int BadgeNumber = 0;
+    private readonly IBinder binder = new LocalBinder();
+
+    public class LocalBinder : Binder
+    {
+        public MyBackgroundService GetService()
+        {
+            return this.GetService();
+        }
+    }
 
     public override IBinder OnBind(Intent intent)
     {
-        return null;
+        return binder;
     }
 
-    public override StartCommandResult OnStartCommand(Intent intent, 
+    public override StartCommandResult OnStartCommand(Intent intent,
         StartCommandFlags flags, int startId)
     {
         var input = intent.GetStringExtra("inputExtra");
 
         var notificationIntent = new Intent(this, typeof(MainActivity));
-        var pendingIntent = PendingIntent.GetActivity(this, 0, notificationIntent, 
-            PendingIntentFlags.Immutable);
+        notificationIntent.SetAction("USER_TAPPED_NOTIFIACTION");
+        
+        var pendingIntent = PendingIntent.GetActivity(this, 0, notificationIntent,
+            PendingIntentFlags.UpdateCurrent);
 
-        var notification = new NotificationCompat.Builder(this, 
+        var notification = new NotificationCompat.Builder(this,
                 MainApplication.ChannelId)
             .SetContentText(input)
             .SetSmallIcon(Resource.Drawable.AppIcon)
             .SetContentIntent(pendingIntent);
+
+        StartForeground(myId, notification.Build());
 
         timer = new Timer(Timer_Elapsed, notification, 0, 10000);
 
@@ -123,6 +136,7 @@ internal class MyBackgroundService : Service
         var notification = (NotificationCompat.Builder)state;
         notification.SetNumber(BadgeNumber);
         notification.SetContentTitle(timeString);
+        notification.SetContentText(timeString);
         StartForeground(myId, notification.Build());
 
     }
@@ -141,16 +155,26 @@ int myId = (new object()).GetHashCode();
 
 This is basically a random integer that I can use as an ID. It's not really necessary, but I'm not a fan of using magic numbers.
 
-Look at lines 15-18:
+Look at lines 14-27:
 
 ```c#
+private readonly IBinder binder = new LocalBinder();
+
+public class LocalBinder : Binder
+{
+    public MyBackgroundService GetService()
+    {
+        return this.GetService();
+    }
+}
+
 public override IBinder OnBind(Intent intent)
 {
-    return null;
+    return binder;
 }
 ```
 
-We’re not using the OnBind method, which is used for "Bound Services", so simply return null here. 
+The `LocalBinder` class is a simple `Binder` abstraction with a `GetService()` method returning the service.
 
 Let's dive into the `OnStartCommand` method, which we are overriding.
 
@@ -160,7 +184,7 @@ The first thing we do is retrieve a string, which we set in `MainActivity`.  Thi
 var input = intent.GetStringExtra("inputExtra");
 ```
 
-Line 25 creates an intent linked to the app itself via `MainActivity`:
+Line 34 creates an intent linked to the app itself via `MainActivity`:
 
 ```c#
 var notificationIntent = new Intent(this, typeof(MainActivity));
@@ -168,16 +192,22 @@ var notificationIntent = new Intent(this, typeof(MainActivity));
 
 An `Intent` is a software mechanism for describing an operation to be performed. It's a way to pass data between components of an Android application, but it also allows communication between different applications.
 
+Line 35 sets an Action on the intent, which we can inspect when the intent is processed (more on that later):
+
+```c#
+notificationIntent.SetAction("USER_TAPPED_NOTIFIACTION");
+```
+
 The Intent we want will ensure that when the user taps on a notification, it will bring up the App.
 
-However, we can't use the `notificationIntent` directly. We have to create a `PendingIntent` from it with the code in lines 26 and 27:
+However, we can't use the `notificationIntent` directly. We have to create a `PendingIntent` from it with the code in lines 37 and 38:
 
 ```c#
 var pendingIntent = PendingIntent.GetActivity(this, 0, notificationIntent,
-    PendingIntentFlags.Immutable);
+    PendingIntentFlags.UpdateCurrent);
 ```
 
-Lines 29-33 create a `NotificationCompat.Builder`, which is used to trigger a notification.
+Lines 40-44 create a `NotificationCompat.Builder`, which is used to trigger a notification.
 
 ```c#
 var notification = new NotificationCompat.Builder(this,
@@ -195,9 +225,15 @@ Notice the methods we are calling:
 - `SetSmallIcon` defines the icon that will display at the very top left of the phone screen when the service is running.
 - `SetContentIntent` sets the intent, which links the notification back to our app.
 
+It's a good practice to start the service right here, so the next line does just that:
+
+```c#
+StartForeground(myId, notification.Build());
+```
+
 At this point you can kick off a worker thread, initialize a timer, set up a pub/sub event handler, or do whatever you need to do in the background. Just be careful you don't take up too much CPU and/or memory as the phone's battery will run down faster. 
 
-For the first part of the demo, we'll instantiate the timer on line 35:
+For the first part of the demo, we'll instantiate the timer on line 48:
 
 ```c#
 timer = new Timer(Timer_Elapsed, notification, 0, 10000);
@@ -207,7 +243,7 @@ This code basically says "call the Timer_Elapsed method passing the notification
 
 This isn't good production code, but it proves that the service is running in the background.
 
-Finally, line 39 returns this:
+Finally, line 52 returns this:
 
 ```c#
 return StartCommandResult.Sticky;
@@ -280,15 +316,38 @@ using MAUIAndroidFS.Platforms.Android;
 
 namespace MAUIAndroidFS;
 
-[Activity(Theme = "@style/Maui.SplashTheme", MainLauncher = true, 
-    ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation 
-    | ConfigChanges.UiMode | ConfigChanges.ScreenLayout 
-    | ConfigChanges.SmallestScreenSize  | ConfigChanges.Density)]
+[Activity(Theme = "@style/Maui.SplashTheme", MainLauncher = true,
+    LaunchMode = LaunchMode.SingleTop,
+    ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation
+    | ConfigChanges.UiMode | ConfigChanges.ScreenLayout
+    | ConfigChanges.SmallestScreenSize | ConfigChanges.Density)]
 public class MainActivity : MauiAppCompatActivity
 {
     public MainActivity()
     {
         AndroidServiceManager.MainActivity = this;
+    }
+
+    protected override void OnNewIntent(Intent intent)
+    {
+        base.OnNewIntent(intent);
+        // Handle the intent that you received
+        ProcessIntent(intent);
+    }
+
+    private void ProcessIntent(Intent intent)
+    {
+        // Extract data from the intent and use it
+        // For example, you can check for a specific action or extract extras
+        if (intent != null)
+        {
+            // Example: checking for a specific action
+            var action = intent.Action;
+            if (action == "USER_TAPPED_NOTIFIACTION")
+            {
+                // Handle the specific action
+            }
+        }
     }
 
     public void StartService()
@@ -306,7 +365,7 @@ public class MainActivity : MauiAppCompatActivity
 }
 ```
 
-Line 16 deserves an explanation:
+Line 17 deserves an explanation:
 
 ```c#
 AndroidServiceManager.MainActivity = this;
@@ -420,17 +479,17 @@ Replace */Platforms/Android/AndroidManifext.xml* with the following:
 	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 	<uses-permission android:name="android.permission.INTERNET" />
 	<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <application android:name="MauiAndroidFS.MainApplication"
+	<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+	<uses-permission android:name="android.permission.FLAG_KEEP_SCREEN_ON"/>
+	<application android:name="MAUIAndroidFS.MainApplication"
                  android:debuggable="true"
                  android:enabled="true"
                  android:allowBackup="true"
-				 android:permission="android.permission.RECEIVE_BOOT_COMPLETED"
                  android:icon="@mipmap/appicon"
                  android:roundIcon="@mipmap/appicon_round"
                  android:supportsRtl="true">
-		<receiver android:name=".BootReceiver"
+		<receiver android:name=".BootReceiver24"
                   android:directBootAware="true"
-				  android:permission="android.permission.RECEIVE_BOOT_COMPLETED"
                   android:enabled="true"
                   android:exported="true">
 			<intent-filter>
@@ -449,14 +508,14 @@ The four permissions expressed at the top are all necessary:
 <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 <uses-permission android:name="android.permission.INTERNET" />
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+<uses-permission android:name="android.permission.FLAG_KEEP_SCREEN_ON"/>
 ```
-
-Notice that permissions are repeated in the `<application>` and `<receiver>` elements.
 
 Some values you might need to change are:
 
 ```xml
-<application android:name="MauiAndroidFS.MainApplication"
+<application android:name="MAUIAndroidFS.MainApplication"
 ```
 
 depending on the name of your application. And:
