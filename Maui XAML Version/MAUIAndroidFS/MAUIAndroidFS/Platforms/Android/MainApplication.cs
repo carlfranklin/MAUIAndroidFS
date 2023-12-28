@@ -7,8 +7,7 @@ namespace MAUIAndroidFS;
 [Application]
 public class MainApplication : MauiApplication
 {
-    public static readonly string ChannelId
-        = "backgroundServiceChannel";
+    public static readonly string ChannelId = "backgroundServiceChannel";
 
     public MainApplication(IntPtr handle,
         JniHandleOwnership ownership) : base(handle, ownership)
