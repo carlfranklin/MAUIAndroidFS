@@ -488,7 +488,7 @@ Replace */Platforms/Android/AndroidManifext.xml* with the following:
                  android:icon="@mipmap/appicon"
                  android:roundIcon="@mipmap/appicon_round"
                  android:supportsRtl="true">
-		<receiver android:name=".BootReceiver24"
+		<receiver android:name=".BootReceiver"
                   android:directBootAware="true"
                   android:enabled="true"
                   android:exported="true">
