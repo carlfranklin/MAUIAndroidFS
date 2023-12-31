@@ -480,7 +480,6 @@ Replace */Platforms/Android/AndroidManifext.xml* with the following:
 	<uses-permission android:name="android.permission.INTERNET" />
 	<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 	<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
-	<uses-permission android:name="android.permission.FLAG_KEEP_SCREEN_ON"/>
 	<application android:name="MAUIAndroidFS.MainApplication"
                  android:debuggable="true"
                  android:enabled="true"
@@ -504,12 +503,11 @@ Replace */Platforms/Android/AndroidManifext.xml* with the following:
 The four permissions expressed at the top are all necessary:
 
 ```xml
-<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-<uses-permission android:name="android.permission.INTERNET" />
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
-<uses-permission android:name="android.permission.FLAG_KEEP_SCREEN_ON"/>
+	<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+	<uses-permission android:name="android.permission.INTERNET" />
+	<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+	<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
 ```
 
 Some values you might need to change are:
@@ -807,18 +805,20 @@ internal class MyBackgroundService : Service
         var pendingIntent = PendingIntent.GetActivity(this, 0, notificationIntent,
             PendingIntentFlags.Immutable);
 
+        // Increment the BadgeNumber
+        BadgeNumber++;
+
         notification = new NotificationCompat.Builder(this,
                 MainApplication.ChannelId)
             .SetContentText(input)
             .SetSmallIcon(Resource.Drawable.AppIcon)
+            .SetAutoCancel(false)
+            .SetContentTitle("Service Running")
+            .SetPriority(NotificationCompat.PriorityDefault)
             .SetContentIntent(pendingIntent);
 
-        // Increment the BadgeNumber
-        BadgeNumber++;
-        // set the number
         notification.SetNumber(BadgeNumber);
-        // set the title (text) to Service Running
-        notification.SetContentTitle("Service Running");
+
         // build and notify
         StartForeground(myId, notification.Build());
 
@@ -844,6 +844,7 @@ internal class MyBackgroundService : Service
                 BadgeNumber++;
                 notification.SetNumber(BadgeNumber);
                 notification.SetContentTitle(message);
+                notification.SetAutoCancel(false);
                 StartForeground(myId, notification.Build());
             });
             try

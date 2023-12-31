@@ -40,18 +40,20 @@ internal class MyBackgroundService : Service
         var pendingIntent = PendingIntent.GetActivity(this, 0, notificationIntent,
             PendingIntentFlags.Immutable);
 
+        // Increment the BadgeNumber
+        BadgeNumber++;
+
         notification = new NotificationCompat.Builder(this,
                 MainApplication.ChannelId)
             .SetContentText(input)
             .SetSmallIcon(Resource.Drawable.AppIcon)
+            .SetAutoCancel(false)
+            .SetContentTitle("Service Running")
+            .SetPriority(NotificationCompat.PriorityDefault)
             .SetContentIntent(pendingIntent);
 
-        // Increment the BadgeNumber
-        BadgeNumber++;
-        // set the number
         notification.SetNumber(BadgeNumber);
-        // set the title (text) to Service Running
-        notification.SetContentTitle("Service Running");
+
         // build and notify
         StartForeground(myId, notification.Build());
 
@@ -68,7 +70,7 @@ internal class MyBackgroundService : Service
         if (hubConnection == null)
         {
             hubConnection = new HubConnectionBuilder()
-                .WithUrl("https://MAUIBroadcastServer.azurewebsites.net/BroadcastHub")
+                .WithUrl("https://[YOUR-AZURE-SERVER-NAME].azurewebsites.net/BroadcastHub")
                 .Build();
 
             hubConnection.On<string>("ReceiveMessage", (message) =>
@@ -77,6 +79,7 @@ internal class MyBackgroundService : Service
                 BadgeNumber++;
                 notification.SetNumber(BadgeNumber);
                 notification.SetContentTitle(message);
+                notification.SetAutoCancel(false);
                 StartForeground(myId, notification.Build());
             });
             try

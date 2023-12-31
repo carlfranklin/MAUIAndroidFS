@@ -7,7 +7,7 @@ namespace MAUIAndroidFS.Platforms.Android;
 
 [BroadcastReceiver(Enabled = true, Exported = true, DirectBootAware = true)]
 [IntentFilter(new[] { Intent.ActionBootCompleted })]
-public class BootReceiver4 : BroadcastReceiver
+public class BootReceiver : BroadcastReceiver
 {
     public override void OnReceive(Context context, Intent intent)
     {
