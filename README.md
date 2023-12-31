@@ -58,11 +58,11 @@ I started with the code [in this blog post](https://putridparrot.com/blog/androi
 
 Create either a **.NET MAUI App** or a **.NET MAUI Blazor App** called **MAUIAndroidFS**
 
-![image-20230526185550578](images/image-20230526185550578.png)
+![image-20231231143729915](images/image-20231231143729915.png)
 
-![image-20230526185607142](images/image-20230526185607142.png)
+![image-20231231143816178](images/image-20231231143816178.png)
 
-![image-20230526185617302](images/image-20230526185617302.png)
+![image-20231231143844835](images/image-20231231143844835.png)
 
 **Create the service itself**
 
@@ -470,7 +470,7 @@ Be on the lookout for that.  The phone has to be on in order for you to see it.
 
 Now, perhaps the most important piece: configuration.
 
-Replace */Platforms/Android/AndroidManifext.xml* with the following:
+Open */Platforms/Android/AndroidManifext.xml* with the XML Text Editor, and replace with the following:
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
