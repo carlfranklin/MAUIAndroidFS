@@ -4,8 +4,8 @@ string Message = "";
 HubConnection hubConnection;
 
 hubConnection = new HubConnectionBuilder()
-.WithUrl("https://[YOUR-AZURE-SERVER-NAME].azurewebsites.net/BroadcastHub")
-.Build();
+    .WithUrl("https://[YOUR-AZURE-SERVER-NAME].azurewebsites.net/BroadcastHub")
+    .Build();
 
 try
 {

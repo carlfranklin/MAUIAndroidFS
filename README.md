@@ -759,7 +759,7 @@ Make sure to replace `[YOUR-AZURE-SERVER-NAME]` with your actual published web a
 Add the SignalR Client package to the MAUI App:
 
 ```xml
-<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="7.0.5" />
+<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="7.0.14" />
 ```
 
 Replace */Platforms/Android/MyBackgroundService.cs* with the following:
@@ -779,12 +779,21 @@ internal class MyBackgroundService : Service
     Timer timer = null;
     int myId = (new object()).GetHashCode();
     int BadgeNumber = 0;
+    private readonly IBinder binder = new LocalBinder();
     NotificationCompat.Builder notification;
     HubConnection hubConnection;
 
+    public class LocalBinder : Binder
+    {
+        public MyBackgroundService GetService()
+        {
+            return this.GetService();
+        }
+    }
+
     public override IBinder OnBind(Intent intent)
     {
-        return null;
+        return binder;
     }
 
     public override StartCommandResult OnStartCommand(Intent intent,
@@ -793,6 +802,8 @@ internal class MyBackgroundService : Service
         var input = intent.GetStringExtra("inputExtra");
 
         var notificationIntent = new Intent(this, typeof(MainActivity));
+        notificationIntent.SetAction("USER_TAPPED_NOTIFIACTION");
+
         var pendingIntent = PendingIntent.GetActivity(this, 0, notificationIntent,
             PendingIntentFlags.Immutable);
 
